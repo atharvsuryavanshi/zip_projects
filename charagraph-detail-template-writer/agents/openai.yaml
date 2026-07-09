@@ -1,0 +1,5 @@
+interface:
+  display_name: "CharaGraph Detail Template Writer"
+  short_description: "Generate CharaGraph detail template JSON/YAML."
+  icon: "🧩"
+  brand_color: "#6366F1"
