@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Premium Trailing Timer</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts for digital and sleek modern interfaces -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .digital-font {
+      font-family: 'Share Tech Mono', monospace;
+    }
+    /* Glow effects */
+    .glow-amber {
+      box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.4);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.4);
+    }
+    .glow-indigo {
+      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.3);
+    }
+    /* Smooth progress ring transition */
+    circle {
+      transition: stroke-dashoffset 0.3s linear, stroke 0.5s ease;
+    }
+    /* Pulse anims */
+    @keyframes slow-pulse {
+      0%, 100% { opacity: 0.2; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.03); }
+    }
+    .pulse-bg {
+      animation: slow-pulse 4s infinite ease-in-out;
+    }
+    /* Flash transitions */
+    .flash-overlay {
+      pointer-events: none;
+      transition: opacity 0.15s ease-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4 overflow-x-hidden relative">
+
+  <!-- Ambient Glow Background -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div id="ambient-glow" class="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-indigo-500/10 blur-[100px] pulse-bg"></div>
+    <div class="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-emerald-500/10 blur-[100px] pulse-bg" style="animation-delay: 2s;"></div>
+  </div>
+
+  <!-- Screen Flash Effect Overlay -->
+  <div id="flash-overlay" class="absolute inset-0 z-50 opacity-0 bg-transparent flash-overlay"></div>
+
+  <!-- Main Container -->
+  <div class="w-full max-w-lg bg-slate-900/70 border border-slate-800/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10">
+    
+    <!-- Toast Message Container -->
+    <div id="toast" class="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-700 px-4 py-2.5 rounded-full text-xs font-semibold text-indigo-300 shadow-xl opacity-0 translate-y-[-10px] transition-all duration-300 flex items-center gap-2 pointer-events-none">
+      <svg class="w-4 h-4 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      <span id="toast-text">Custom Preset Loaded</span>
+    </div>
+
+    <!-- Header Section -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+          CHRONOS
+        </h1>
+        <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Dual-Phase Trailing Timer</p>
+      </div>
+      
+      <!-- Audio Permission & Test Utility -->
+      <button onclick="testAudio()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/50 text-xs text-slate-300 hover:bg-slate-800 transition active:scale-95" title="Make sure audio is enabled on your device">
+        <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+        </svg>
+        <span>Test Sound</span>
+      </button>
+    </div>
+
+    <!-- Primary Display Area (Circular Progress + Timers) -->
+    <div class="relative flex flex-col items-center justify-center my-6">
+      
+      <!-- Circular SVG Countdown Progress Ring -->
+      <div class="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center">
+        <!-- SVG Ring -->
+        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
+          <!-- Background track -->
+          <circle 
+            cx="100" 
+            cy="100" 
+            r="88" 
+            class="stroke-slate-800/40" 
+            stroke-width="7" 
+            fill="transparent"
+          />
+          <!-- Interactive animated glowing path -->
+          <circle 
+            id="progress-ring"
+            cx="100" 
+            cy="100" 
+            r="88" 
+            class="stroke-indigo-500" 
+            stroke-width="7" 
+            fill="transparent"
+            stroke-dasharray="553"
+            stroke-dashoffset="0"
+            stroke-linecap="round"
+          />
+        </svg>
+
+        <!-- Centered Timer Information Overlay -->
+        <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+          
+          <!-- Phase Status Pill Badge -->
+          <span id="phase-badge" class="px-3 py-1 rounded-full text-[10px] font-extrabold tracking-widest uppercase mb-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 glow-indigo">
+            STANDBY
+          </span>
+
+          <!-- Digital Clock Countdown -->
+          <span id="countdown-display" class="digital-font text-5xl sm:text-6xl font-normal tracking-tight text-slate-100 my-1 drop-shadow-[0_2px_10px_rgba(255,255,255,0.05)]">
+            00:00
+          </span>
+
+          <!-- Phase duration details / Helper -->
+          <div id="sub-countdown-info" class="text-xs text-slate-400 h-5 font-medium transition-all duration-300">
+            Select a preset or setup custom
+          </div>
+          
+          <!-- Next Phase Preview Indicator -->
+          <div id="next-phase-preview" class="mt-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-800/40 px-2.5 py-1 rounded-md border border-slate-700/30">
+            NEXT: MAIN PHASE (01:00)
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Active Phase visualizer (Simple sub bar underneath the main circle) -->
+    <div class="grid grid-cols-2 gap-3 mb-6 bg-slate-950/40 p-2.5 rounded-2xl border border-slate-800/40 text-center">
+      <div id="visualizer-trailing" class="p-2 rounded-xl border border-transparent transition-all duration-300">
+        <p class="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Phase 1: Trailing</p>
+        <p id="vis-trail-val" class="text-sm font-semibold text-slate-400 mt-0.5">0s</p>
+      </div>
+      <div id="visualizer-main" class="p-2 rounded-xl border border-transparent transition-all duration-300">
+        <p class="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Phase 2: Main</p>
+        <p id="vis-main-val" class="text-sm font-semibold text-slate-400 mt-0.5">0m 0s</p>
+      </div>
+    </div>
+
+    <!-- Quick Presets Grid -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400">Quick Presets</h3>
+        <span class="text-[10px] text-slate-500 font-medium">Includes 5s Trailing Prep</span>
+      </div>
+      <div class="grid grid-cols-5 gap-2">
+        <button onclick="applyPreset(1, 5, this)" class="preset-btn bg-slate-800/40 border border-slate-700/50 rounded-xl py-2 px-1 text-center transition hover:bg-indigo-600/10 hover:border-indigo-500/40 active:scale-95 group">
+          <p class="text-xs font-bold text-slate-200 group-hover:text-indigo-400">1:05</p>
+          <p class="text-[9px] text-slate-500 group-hover:text-indigo-300/80 mt-0.5 font-medium">1m + 5s</p>
+        </button>
+        <button onclick="applyPreset(2, 5, this)" class="preset-btn bg-slate-800/40 border border-slate-700/50 rounded-xl py-2 px-1 text-center transition hover:bg-indigo-600/10 hover:border-indigo-500/40 active:scale-95 group">
+          <p class="text-xs font-bold text-slate-200 group-hover:text-indigo-400">2:05</p>
+          <p class="text-[9px] text-slate-500 group-hover:text-indigo-300/80 mt-0.5 font-medium">2m + 5s</p>
+        </button>
+        <button onclick="applyPreset(3, 5, this)" class="preset-btn bg-slate-800/40 border border-slate-700/50 rounded-xl py-2 px-1 text-center transition hover:bg-indigo-600/10 hover:border-indigo-500/40 active:scale-95 group">
+          <p class="text-xs font-bold text-slate-200 group-hover:text-indigo-400">3:05</p>
+          <p class="text-[9px] text-slate-500 group-hover:text-indigo-300/80 mt-0.5 font-medium">3m + 5s</p>
+        </button>
+        <button onclick="applyPreset(5, 5, this)" class="preset-btn bg-slate-800/40 border border-slate-700/50 rounded-xl py-2 px-1 text-center transition hover:bg-indigo-600/10 hover:border-indigo-500/40 active:scale-95 group">
+          <p class="text-xs font-bold text-slate-200 group-hover:text-indigo-400">5:05</p>
+          <p class="text-[9px] text-slate-500 group-hover:text-indigo-300/80 mt-0.5 font-medium">5m + 5s</p>
+        </button>
+        <button onclick="applyPreset(10, 5, this)" class="preset-btn bg-slate-800/40 border border-slate-700/50 rounded-xl py-2 px-1 text-center transition hover:bg-indigo-600/10 hover:border-indigo-500/40 active:scale-95 group">
+          <p class="text-xs font-bold text-slate-200 group-hover:text-indigo-400">10:05</p>
+          <p class="text-[9px] text-slate-500 group-hover:text-indigo-300/80 mt-0.5 font-medium">10m + 5s</p>
+        </button>
+      </div>
+    </div>
+
+    <!-- Toggle & Custom Configurator Panel -->
+    <div class="mb-8">
+      <button onclick="toggleCustomSection()" class="w-full flex items-center justify-between py-2 px-1 text-xs font-bold uppercase tracking-widest text-slate-400 border-t border-slate-800/80 mt-4 pt-4 group">
+        <span>Custom Setup</span>
+        <div class="flex items-center gap-1 text-[10px] text-slate-500 font-medium group-hover:text-indigo-400 transition-colors">
+          <span id="custom-state-text">Configure</span>
+          <svg id="custom-chevron" class="w-4 h-4 transform transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" /></svg>
+        </div>
+      </button>
+
+      <!-- Collapsible Custom Settings Panel -->
+      <div id="custom-settings-panel" class="hidden overflow-hidden transition-all duration-300 mt-4 space-y-4">
+        
+        <!-- Two-column settings: Main Timer & Trailing Time -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          
+          <!-- Column A: Custom Main Timer (Max 59m 59s) -->
+          <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/70">
+            <h4 class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3">1. Custom Main Time</h4>
+            
+            <div class="flex items-center justify-center gap-2">
+              <!-- Minutes Picker Group -->
+              <div class="flex flex-col items-center">
+                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Mins</span>
+                <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+                  <button type="button" onclick="adjustCustom('mainMin', -1)" class="px-2 py-1.5 text-slate-400 hover:bg-slate-800 active:bg-slate-700 transition font-bold">-</button>
+                  <input type="number" id="custom-main-min" min="0" max="59" value="2" class="w-10 bg-transparent text-center text-sm font-semibold text-slate-200 outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                  <button type="button" onclick="adjustCustom('mainMin', 1)" class="px-2 py-1.5 text-slate-400 hover:bg-slate-800 active:bg-slate-700 transition font-bold">+</button>
+                </div>
+              </div>
+
+              <span class="text-slate-600 font-bold mt-4">:</span>
+
+              <!-- Seconds Picker Group -->
+              <div class="flex flex-col items-center">
+                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Secs</span>
+                <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+                  <button type="button" onclick="adjustCustom('mainSec', -1)" class="px-2 py-1.5 text-slate-400 hover:bg-slate-800 active:bg-slate-700 transition font-bold">-</button>
+                  <input type="number" id="custom-main-sec" min="0" max="59" value="0" class="w-10 bg-transparent text-center text-sm font-semibold text-slate-200 outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                  <button type="button" onclick="adjustCustom('mainSec', 1)" class="px-2 py-1.5 text-slate-400 hover:bg-slate-800 active:bg-slate-700 transition font-bold">+</button>
+                </div>
+              </div>
+            </div>
+            
+            <p class="text-[9px] text-slate-500 text-center mt-3">Up to 59m 59s</p>
+          </div>
+
+          <!-- Column B: Custom Trailing Time (Max 59s) -->
+          <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/70">
+            <h4 class="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-3">2. Trailing Time (Prep)</h4>
+            
+            <div class="flex flex-col items-center justify-center">
+              <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Seconds Only</span>
+              <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg overflow-hidden w-28">
+                <button type="button" onclick="adjustCustom('trailSec', -1)" class="flex-1 py-1.5 text-slate-400 hover:bg-slate-800 active:bg-slate-700 transition font-bold">-</button>
+                <input type="number" id="custom-trail-sec" min="0" max="59" value="5" class="w-10 bg-transparent text-center text-sm font-semibold text-slate-200 outline-none select-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                <button type="button" onclick="adjustCustom('trailSec', 1)" class="flex-1 py-1.5 text-slate-400 hover:bg-slate-800 active:bg-slate-700 transition font-bold">+</button>
+              </div>
+            </div>
+            
+            <p class="text-[9px] text-slate-500 text-center mt-3">Max 59s (Prep sound cue when finished)</p>
+          </div>
+
+        </div>
+
+        <!-- Apply Custom Button -->
+        <button onclick="applyCustomTimer()" class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-all tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+          Load Custom Settings
+        </button>
+      </div>
+    </div>
+
+    <!-- Controls Button Tray -->
+    <div class="flex gap-3 mt-6">
+      <!-- Secondary Reset Button -->
+      <button id="reset-btn" onclick="resetTimer()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3.5 px-4 rounded-2xl transition active:scale-95 border border-slate-700/50 flex items-center justify-center gap-2 text-sm tracking-wide">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 15H19" />
+        </svg>
+        Reset
+      </button>
+
+      <!-- Primary Action: Start/Pause -->
+      <button id="primary-btn" onclick="toggleTimer()" class="flex-[2] bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3.5 px-6 rounded-2xl transition duration-150 transform active:scale-95 flex items-center justify-center gap-2 text-sm tracking-wide shadow-lg shadow-indigo-500/10">
+        <svg id="primary-btn-icon" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+        </svg>
+        <span id="primary-btn-text">Start Session</span>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // --- AUDIO SYSTEM (Web Audio API) ---
+    let audioCtx = null;
+
+    function initAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    /**
+     * Programmatically play beeps to avoid raw audio file loading bugs or permissions blocks
+     * @param {number} count - 1 for single beep (trailing end), 2 for double beep (final end)
+     * @param {number} pitch - frequency in Hz (default A5, 880Hz)
+     */
+    function playBeep(count, pitch = 880) {
+      initAudioContext();
+      if (!audioCtx) return;
+
+      const duration = 0.18; // duration of single beep burst in seconds
+
+      function singleBeep(timeOffset, callback) {
+        const startTime = audioCtx.currentTime + timeOffset;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(pitch, startTime);
+
+        // Quick ramp to avoid annoying audio clicks
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.5, startTime + 0.02);
+        gain.gain.setValueAtTime(0.5, startTime + duration - 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+
+        if (callback) {
+          setTimeout(callback, (timeOffset + duration) * 1000);
+        }
+      }
+
+      if (count === 1) {
+        // Single beep
+        singleBeep(0);
+      } else if (count === 2) {
+        // Double beep (separated by 120ms)
+        singleBeep(0);
+        singleBeep(0.32);
+      }
+    }
+
+    // Quick audio diagnostics test
+    function testAudio() {
+      try {
+        playBeep(2, 980);
+        showToast("🔔 Playback Test Played Successfully!");
+      } catch (e) {
+        console.error("Audio activation failed", e);
+      }
+    }
+
+
+    // --- APPLICATION STATE ---
+    const TIMER_STATES = {
+      IDLE: 'IDLE',
+      TRAILING: 'TRAILING',
+      MAIN: 'MAIN',
+      PAUSED: 'PAUSED',
+      COMPLETED: 'COMPLETED'
+    };
+
+    let currentState = TIMER_STATES.IDLE;
+    
+    // Core parameters (Times in seconds)
+    let configTrailingSec = 5;      // Chosen preparation time
+    let configMainSec = 120;        // Chosen primary focus time
+    
+    // Live ticking states
+    let currentPhase = 'idle';      // 'trailing' or 'main'
+    let secondsRemaining = 0;       // Seconds left in the active phase
+    let phaseTotalDuration = 0;     // Total seconds of the active phase for progress ring calculation
+    
+    // Engine Reference
+    let timerInterval = null;
+
+
+    // --- DOM REFERENCES ---
+    const progressRing = document.getElementById('progress-ring');
+    const phaseBadge = document.getElementById('phase-badge');
+    const countdownDisplay = document.getElementById('countdown-display');
+    const subCountdownInfo = document.getElementById('sub-countdown-info');
+    const nextPhasePreview = document.getElementById('next-phase-preview');
+    const primaryBtn = document.getElementById('primary-btn');
+    const primaryBtnText = document.getElementById('primary-btn-text');
+    const primaryBtnIcon = document.getElementById('primary-btn-icon');
+    const resetBtn = document.getElementById('reset-btn');
+    
+    const visTrailVal = document.getElementById('vis-trail-val');
+    const visMainVal = document.getElementById('vis-main-val');
+    const visTrailCard = document.getElementById('visualizer-trailing');
+    const visMainCard = document.getElementById('visualizer-main');
+    
+    const customMainMin = document.getElementById('custom-main-min');
+    const customMainSec = document.getElementById('custom-main-sec');
+    const customTrailSec = document.getElementById('custom-trail-sec');
+    const customSettingsPanel = document.getElementById('custom-settings-panel');
+    const customChevron = document.getElementById('custom-chevron');
+    const customStateText = document.getElementById('custom-state-text');
+    const flashOverlay = document.getElementById('flash-overlay');
+
+
+    // --- APP INITIALIZATION ---
+    window.onload = function() {
+      // Setup default configuration (e.g. 2 min 5 sec)
+      applyPreset(2, 5, null);
+      updateUI();
+    };
+
+
+    // --- CONTROL LOGIC ---
+
+    // Toggle play/pause
+    function toggleTimer() {
+      initAudioContext();
+
+      if (currentState === TIMER_STATES.IDLE || currentState === TIMER_STATES.COMPLETED) {
+        startTimerSession();
+      } else if (currentState === TIMER_STATES.TRAILING || currentState === TIMER_STATES.MAIN) {
+        pauseTimerSession();
+      } else if (currentState === TIMER_STATES.PAUSED) {
+        resumeTimerSession();
+      }
+    }
+
+    // Initiate full flow from scratch
+    function startTimerSession() {
+      // Guard against bad custom config
+      if (configTrailingSec === 0 && configMainSec === 0) {
+        showToast("⚠️ Set a valid timer duration!");
+        return;
+      }
+
+      // Check if we start with Trailing Phase
+      if (configTrailingSec > 0) {
+        currentState = TIMER_STATES.TRAILING;
+        currentPhase = 'trailing';
+        secondsRemaining = configTrailingSec;
+        phaseTotalDuration = configTrailingSec;
+      } else {
+        // Skip straight to main timer
+        currentState = TIMER_STATES.MAIN;
+        currentPhase = 'main';
+        secondsRemaining = configMainSec;
+        phaseTotalDuration = configMainSec;
+      }
+
+      startTickEngine();
+      updateUI();
+    }
+
+    function pauseTimerSession() {
+      if (timerInterval) clearInterval(timerInterval);
+      currentState = TIMER_STATES.PAUSED;
+      updateUI();
+    }
+
+    function resumeTimerSession() {
+      currentState = currentPhase === 'trailing' ? TIMER_STATES.TRAILING : TIMER_STATES.MAIN;
+      startTickEngine();
+      updateUI();
+    }
+
+    function resetTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      currentState = TIMER_STATES.IDLE;
+      currentPhase = 'idle';
+      secondsRemaining = configTrailingSec > 0 ? configTrailingSec : configMainSec;
+      phaseTotalDuration = secondsRemaining;
+      
+      updateUI();
+    }
+
+    // Ticker implementation
+    function startTickEngine() {
+      if (timerInterval) clearInterval(timerInterval);
+      
+      timerInterval = setInterval(() => {
+        if (secondsRemaining > 0) {
+          secondsRemaining--;
+          updateUI();
+        } else {
+          // Phase finished logic
+          handlePhaseCompletion();
+        }
+      }, 1000);
+    }
+
+    function handlePhaseCompletion() {
+      if (currentPhase === 'trailing') {
+        // Trailing done -> Single Beep!
+        playBeep(1, 880);
+        triggerFlashEffect('amber');
+
+        // Transition to Main Phase immediately
+        if (configMainSec > 0) {
+          currentPhase = 'main';
+          currentState = TIMER_STATES.MAIN;
+          secondsRemaining = configMainSec;
+          phaseTotalDuration = configMainSec;
+          updateUI();
+        } else {
+          // No main timer set? Finish session
+          completeSession();
+        }
+      } else if (currentPhase === 'main') {
+        // Main done -> Double Beep!
+        playBeep(2, 980);
+        triggerFlashEffect('emerald');
+        completeSession();
+      }
+    }
+
+    function completeSession() {
+      if (timerInterval) clearInterval(timerInterval);
+      currentState = TIMER_STATES.COMPLETED;
+      currentPhase = 'done';
+      secondsRemaining = 0;
+      updateUI();
+    }
+
+
+    // --- UI PRESENTATION RENDERERS ---
+
+    function updateUI() {
+      // 1. Digital Clock Formatting
+      let displayMinutes = 0;
+      let displaySeconds = 0;
+
+      if (currentState === TIMER_STATES.IDLE) {
+        // Show total session length (Trailing + Main merged)
+        const total = configTrailingSec + configMainSec;
+        displayMinutes = Math.floor(total / 60);
+        displaySeconds = total % 60;
+      } else {
+        displayMinutes = Math.floor(secondsRemaining / 60);
+        displaySeconds = secondsRemaining % 60;
+      }
+
+      countdownDisplay.textContent = 
+        `${String(displayMinutes).padStart(2, '0')}:${String(displaySeconds).padStart(2, '0')}`;
+
+      // 2. State & Styling Adaptation
+      adjustRingAndBadgeStyle();
+
+      // 3. Simple Sub-info Text generator
+      renderSubInfo();
+
+      // 4. Custom Picker values visualizer cards
+      visTrailVal.textContent = `${configTrailingSec}s`;
+      visMainVal.textContent = `${Math.floor(configMainSec / 60)}m ${configMainSec % 60}s`;
+
+      // 5. Button tray label/icon adaptation
+      updateControlsInterface();
+    }
+
+    function adjustRingAndBadgeStyle() {
+      // Calculate Circle Circumference = 2 * PI * r (r=88) -> 552.92
+      const circumference = 553;
+      progressRing.style.strokeDasharray = circumference;
+
+      let progressPercent = 0;
+      if (currentState !== TIMER_STATES.IDLE && phaseTotalDuration > 0) {
+        progressPercent = (secondsRemaining / phaseTotalDuration);
+      } else {
+        progressPercent = 1.0; // full ring at idle
+      }
+
+      const offset = circumference - (progressPercent * circumference);
+      progressRing.style.strokeDashoffset = offset;
+
+      // Color themes depending on state
+      if (currentState === TIMER_STATES.IDLE) {
+        progressRing.className.baseVal = "stroke-indigo-500 glow-indigo";
+        phaseBadge.textContent = "Standby";
+        phaseBadge.className = "px-3 py-1 rounded-full text-[10px] font-extrabold tracking-widest uppercase mb-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20";
+        
+        visTrailCard.className = "p-2 rounded-xl border border-transparent transition-all duration-300";
+        visMainCard.className = "p-2 rounded-xl border border-transparent transition-all duration-300";
+      
+      } else if (currentState === TIMER_STATES.TRAILING) {
+        progressRing.className.baseVal = "stroke-amber-500 glow-amber";
+        phaseBadge.textContent = "TRAILING TIME (PREP)";
+        phaseBadge.className = "px-3 py-1 rounded-full text-[10px] font-extrabold tracking-widest uppercase mb-1 bg-amber-500/15 text-amber-400 border border-amber-500/30";
+        
+        // Highlight trailing card
+        visTrailCard.className = "p-2 rounded-xl border border-amber-500/30 bg-amber-500/5 transition-all duration-300";
+        visMainCard.className = "p-2 rounded-xl border border-transparent opacity-50 transition-all duration-300";
+
+      } else if (currentState === TIMER_STATES.MAIN) {
+        progressRing.className.baseVal = "stroke-emerald-500 glow-emerald";
+        phaseBadge.textContent = "MAIN TIMER (FOCUS)";
+        phaseBadge.className = "px-3 py-1 rounded-full text-[10px] font-extrabold tracking-widest uppercase mb-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
+        
+        // Highlight main card
+        visTrailCard.className = "p-2 rounded-xl border border-transparent opacity-50 transition-all duration-300";
+        visMainCard.className = "p-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 transition-all duration-300";
+
+      } else if (currentState === TIMER_STATES.PAUSED) {
+        progressRing.className.baseVal = "stroke-slate-500";
+        phaseBadge.textContent = "PAUSED";
+        phaseBadge.className = "px-3 py-1 rounded-full text-[10px] font-extrabold tracking-widest uppercase mb-1 bg-slate-800 text-slate-400 border border-slate-700";
+      
+      } else if (currentState === TIMER_STATES.COMPLETED) {
+        progressRing.className.baseVal = "stroke-indigo-500 glow-indigo animate-pulse";
+        phaseBadge.textContent = "SESSION DONE";
+        phaseBadge.className = "px-3 py-1 rounded-full text-[10px] font-extrabold tracking-widest uppercase mb-1 bg-indigo-500/15 text-indigo-400 border border-indigo-500/30";
+        
+        visTrailCard.className = "p-2 rounded-xl border border-transparent transition-all duration-300";
+        visMainCard.className = "p-2 rounded-xl border border-transparent transition-all duration-300";
+      }
+    }
+
+    function renderSubInfo() {
+      const activeTrail = configTrailingSec;
+      const activeMainMin = Math.floor(configMainSec / 60);
+      const activeMainSec = configMainSec % 60;
+
+      // 1. Details subtitle
+      if (currentState === TIMER_STATES.IDLE) {
+        subCountdownInfo.textContent = "Click Start to begin session";
+      } else if (currentState === TIMER_STATES.TRAILING) {
+        subCountdownInfo.textContent = `Pre-timer: ${secondsRemaining}s left of ${activeTrail}s`;
+      } else if (currentState === TIMER_STATES.MAIN) {
+        subCountdownInfo.textContent = `Focusing: ${Math.floor(secondsRemaining/60)}m ${secondsRemaining%60}s remaining`;
+      } else if (currentState === TIMER_STATES.PAUSED) {
+        subCountdownInfo.textContent = "Resume when you are ready";
+      } else if (currentState === TIMER_STATES.COMPLETED) {
+        subCountdownInfo.textContent = "🎉 Excellent job! Session complete.";
+      }
+
+      // 2. Next Phase Preview pill text
+      if (currentState === TIMER_STATES.TRAILING) {
+        nextPhasePreview.textContent = `NEXT: MAIN FOCUS (${activeMainMin}:${String(activeMainSec).padStart(2, '0')})`;
+        nextPhasePreview.classList.remove('hidden');
+      } else if (currentState === TIMER_STATES.IDLE && configTrailingSec > 0) {
+        nextPhasePreview.textContent = `STARTS WITH: PREP TRAILING (${activeTrail}s)`;
+        nextPhasePreview.classList.remove('hidden');
+      } else {
+        nextPhasePreview.classList.add('hidden');
+      }
+    }
+
+    function updateControlsInterface() {
+      if (currentState === TIMER_STATES.IDLE || currentState === TIMER_STATES.COMPLETED) {
+        primaryBtnText.textContent = "Start Session";
+        primaryBtn.className = "flex-[2] bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3.5 px-6 rounded-2xl transition duration-150 transform active:scale-95 flex items-center justify-center gap-2 text-sm tracking-wide shadow-lg shadow-indigo-500/10";
+        primaryBtnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />`;
+        resetBtn.setAttribute('disabled', 'true');
+        resetBtn.classList.add('opacity-40', 'cursor-not-allowed');
+      } else if (currentState === TIMER_STATES.TRAILING || currentState === TIMER_STATES.MAIN) {
+        primaryBtnText.textContent = "Pause";
+        primaryBtn.className = "flex-[2] bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold py-3.5 px-6 rounded-2xl transition duration-150 transform active:scale-95 flex items-center justify-center gap-2 text-sm tracking-wide";
+        primaryBtnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+        resetBtn.removeAttribute('disabled');
+        resetBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+      } else if (currentState === TIMER_STATES.PAUSED) {
+        primaryBtnText.textContent = "Resume";
+        primaryBtn.className = "flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 px-6 rounded-2xl transition duration-150 transform active:scale-95 flex items-center justify-center gap-2 text-sm tracking-wide shadow-lg shadow-indigo-600/20";
+        primaryBtnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />`;
+        resetBtn.removeAttribute('disabled');
+        resetBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+      }
+    }
+
+
+    // --- UTILITIES / INTERACTIVE FUNCTIONS ---
+
+    // Apply quick pre-packaged timers
+    function applyPreset(mainMinutes, trailingSeconds, buttonEl) {
+      if (timerInterval) clearInterval(timerInterval);
+
+      // Save parameters
+      configTrailingSec = trailingSeconds;
+      configMainSec = mainMinutes * 60;
+
+      // Update state
+      currentState = TIMER_STATES.IDLE;
+      currentPhase = 'idle';
+      secondsRemaining = configTrailingSec > 0 ? configTrailingSec : configMainSec;
+      phaseTotalDuration = secondsRemaining;
+
+      // Highlight active preset styling
+      const allPresetButtons = document.querySelectorAll('.preset-btn');
+      allPresetButtons.forEach(btn => {
+        btn.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'scale-[0.98]');
+        btn.classList.add('border-slate-700/50', 'bg-slate-800/40');
+      });
+
+      if (buttonEl) {
+        buttonEl.classList.remove('border-slate-700/50', 'bg-slate-800/40');
+        buttonEl.classList.add('border-indigo-500', 'bg-indigo-500/10', 'scale-[0.98]');
+        showToast(`Preset Loaded: ${mainMinutes} min + ${trailingSeconds}s Trailing`);
+      }
+
+      updateUI();
+    }
+
+    // Toggle custom menu accordion
+    function toggleCustomSection() {
+      if (customSettingsPanel.classList.contains('hidden')) {
+        customSettingsPanel.classList.remove('hidden');
+        customChevron.classList.add('rotate-180');
+        customStateText.textContent = "Close Options";
+      } else {
+        customSettingsPanel.classList.add('hidden');
+        customChevron.classList.remove('rotate-180');
+        customStateText.textContent = "Configure";
+      }
+    }
+
+    // Adjust numeric inputs with inline plus/minus buttons
+    function adjustCustom(field, direction) {
+      if (field === 'mainMin') {
+        let val = parseInt(customMainMin.value) || 0;
+        val = Math.max(0, Math.min(59, val + direction));
+        customMainMin.value = val;
+      } else if (field === 'mainSec') {
+        let val = parseInt(customMainSec.value) || 0;
+        val = Math.max(0, Math.min(59, val + direction));
+        customMainSec.value = val;
+      } else if (field === 'trailSec') {
+        let val = parseInt(customTrailSec.value) || 0;
+        val = Math.max(0, Math.min(59, val + direction));
+        customTrailSec.value = val;
+      }
+    }
+
+    // Apply values typed into Custom Panel inputs
+    function applyCustomTimer() {
+      let mainMin = parseInt(customMainMin.value) || 0;
+      let mainSec = parseInt(customMainSec.value) || 0;
+      let trailSec = parseInt(customTrailSec.value) || 0;
+
+      // Bound validations (max limit matches 59 min 59 sec & 59 sec trailing requirements)
+      if (mainMin > 59) mainMin = 59;
+      if (mainSec > 59) mainSec = 59;
+      if (trailSec > 59) trailSec = 59;
+
+      // Enforce update to normalized visual boundaries
+      customMainMin.value = mainMin;
+      customMainSec.value = mainSec;
+      customTrailSec.value = trailSec;
+
+      if (mainMin === 0 && mainSec === 0 && trailSec === 0) {
+        showToast("⚠️ Set at least some time!");
+        return;
+      }
+
+      // Load parameters
+      configTrailingSec = trailSec;
+      configMainSec = (mainMin * 60) + mainSec;
+
+      // Stop any ticking
+      if (timerInterval) clearInterval(timerInterval);
+
+      currentState = TIMER_STATES.IDLE;
+      currentPhase = 'idle';
+      secondsRemaining = configTrailingSec > 0 ? configTrailingSec : configMainSec;
+      phaseTotalDuration = secondsRemaining;
+
+      // Deselect preset highlights
+      const allPresetButtons = document.querySelectorAll('.preset-btn');
+      allPresetButtons.forEach(btn => {
+        btn.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'scale-[0.98]');
+        btn.classList.add('border-slate-700/50', 'bg-slate-800/40');
+      });
+
+      showToast(`Custom Timer Configured!`);
+      toggleCustomSection(); // Auto collapse
+      updateUI();
+    }
+
+    // Display temporary user notification messages
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+      toastText.textContent = message;
+      
+      toast.classList.remove('opacity-0', 'translate-y-[-10px]');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-[-10px]');
+      }, 2600);
+    }
+
+    // Visual flash alerts across whole screenspace for transitions
+    function triggerFlashEffect(colorType) {
+      if (colorType === 'amber') {
+        flashOverlay.className = "absolute inset-0 z-50 bg-amber-500/25 flash-overlay opacity-100";
+      } else if (colorType === 'emerald') {
+        flashOverlay.className = "absolute inset-0 z-50 bg-emerald-500/30 flash-overlay opacity-100";
+      }
+
+      setTimeout(() => {
+        flashOverlay.className = "absolute inset-0 z-50 bg-transparent flash-overlay opacity-0";
+      }, 400);
+    }
+  </script>
+</body>
+</html>
